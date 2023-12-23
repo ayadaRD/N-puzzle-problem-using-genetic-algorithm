@@ -9,6 +9,8 @@ public class Genetic {
 
     static Random rand = new Random();
 
+    static String goalState = "012345678";
+
     //public Genetic(int n, int numberOfGenerations, int populationSize, double crossOverRate, double mutationRate) {
     //    N = n;
     //    this.numberOfGenerations = numberOfGenerations;
@@ -104,6 +106,33 @@ public class Genetic {
             population.set(randomIndex, String.valueOf(chromosome));
         }
     }
+
+    private static int fitness(String string){
+        char[] chromosome = string.toCharArray();
+        char[] goal = goalState.toCharArray();
+        int fitness = 0;
+        for (int i = 0; i < chromosome.length; i++) {
+            if (chromosome[i] != '0'){
+                int currentRow = i / N;
+                int currentCol = i % N;
+
+                int index = -1;
+                for (int j = 0; j < goal.length; j++) {
+                    if (goal[j] == chromosome[i]){
+                        index = j;
+                        break;
+                    }
+                }
+
+                int targetRow = index / N;
+                int targetCol = index % N;
+
+                int distance = Math.abs(currentRow - targetRow) + Math.abs(currentCol - targetCol);
+                fitness += distance;
+            }
+        }
+        return fitness;
+    }
     static ArrayList<String> ini;
     static ArrayList<String> new_p;
     public static void main(String[] args) {
@@ -116,6 +145,8 @@ public class Genetic {
 
         mutation(new_p);
         System.out.println(new_p);
+
+        System.out.println(fitness("123456780"));
 
     }
 }

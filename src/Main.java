@@ -23,5 +23,6 @@ public class Main {
         System.out.println("What is the rate of mutation?");
         mutationRate = cin.nextDouble();
 
+
     }
 }
