@@ -90,14 +90,30 @@ public class Genetic {
         return newPopulation;
     }
 
+    private static void mutation(ArrayList<String> population){
+        int randomIndex = rand.nextInt(populationSize);
+        char[] chromosome = population.get(randomIndex).toCharArray();
+        int firstIndex = rand.nextInt(N*N);
+        int secondIndex = rand.nextInt(N*N);
+        char firstChar = chromosome[firstIndex];
+        char secondChar = chromosome[secondIndex];
+        chromosome[firstIndex] = secondChar;
+        chromosome[secondIndex] = firstChar;
+        population.set(randomIndex, String.valueOf(chromosome));
+
+    }
+    static ArrayList<String> ini;
+    static ArrayList<String> new_p;
     public static void main(String[] args) {
 
-        ArrayList<String> ini = create_initial_population();
+        ini = create_initial_population();
         System.out.println(ini);
 
-        ArrayList<String> new_p = crossOver(ini);
+        new_p = crossOver(ini);
         System.out.println(new_p);
 
+        mutation(new_p);
+        System.out.println(new_p);
 
     }
 }
