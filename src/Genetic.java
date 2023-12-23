@@ -18,5 +18,4 @@ public class Genetic {
         String[] initialPopulation = new String[populationSize];
         return "";
     }
-
 }
