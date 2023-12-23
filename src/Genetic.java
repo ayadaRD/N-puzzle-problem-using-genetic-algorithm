@@ -3,29 +3,23 @@ import java.util.*;
 public class Genetic {
     //attributes
     static int N = 3, numberOfGenerations, populationSize = 10;
-    static double recombinationRate, mutationRate;
+    static double crossOverRate=0.75, mutationRate;
 
-    private static double selectionRate = 0.75;
+    static double selectionRate = 0.75;
 
     static Random rand = new Random();
 
-    public Genetic(int n, int numberOfGenerations, int populationSize, double recombinationRate, double mutationRate) {
-        N = n;
-        this.numberOfGenerations = numberOfGenerations;
-        this.populationSize = populationSize;
-        this.recombinationRate = recombinationRate;
-        this.mutationRate = mutationRate;
-    }
+    //public Genetic(int n, int numberOfGenerations, int populationSize, double crossOverRate, double mutationRate) {
+    //    N = n;
+    //    this.numberOfGenerations = numberOfGenerations;
+    //    this.populationSize = populationSize;
+    //    this.crossOverRate = crossOverRate;
+    //    this.mutationRate = mutationRate;
+    //}
 
 
-    private void algorithm(){
+    private void algorithm(){}
 
-        //first of all, let's create our first population randomly
-        ArrayList <String> initialPopulation = create_initial_population();
-
-        //now let's select a parents from our population
-        Parent parent = selection(initialPopulation);
-    }
 ////////////////////////////////////////////////////////////////////////////////////
     private static ArrayList<String> create_initial_population(){
 
@@ -63,12 +57,47 @@ public class Genetic {
         }
     }
 //////////////////////////////////////////////////////////////////////////////////////
+
+    private static ArrayList<String> crossOver(ArrayList<String> population){
+        ArrayList<String> newPopulation = new ArrayList<>();
+        int boundary = (N*N)/2;
+
+        do {
+
+            Parent parent = selection(population);
+            double rate = rand.nextDouble();
+            String motherPart = parent.mother.substring(0, boundary);
+            String fatherPart = "";
+
+
+            if (rate < crossOverRate) {
+                for (char i : parent.father.toCharArray()) {
+                    if (!motherPart.contains(String.valueOf(i)))
+                        fatherPart += i;
+                }
+                String child = motherPart + fatherPart;
+                if (!newPopulation.contains(child))
+                    newPopulation.add(child);
+            } else {
+                if (!newPopulation.contains(parent.father))
+                    newPopulation.add(parent.father);
+                if (!newPopulation.contains(parent.mother))
+                    newPopulation.add(parent.mother);
+            }
+
+        } while (newPopulation.size() != populationSize);
+
+        return newPopulation;
+    }
+
     public static void main(String[] args) {
+
         ArrayList<String> ini = create_initial_population();
         System.out.println(ini);
-        Parent p = selection(ini);
-        System.out.println("mom" + p.mother);
-        System.out.println("dad" + p.father);
+
+        ArrayList<String> new_p = crossOver(ini);
+        System.out.println(new_p);
+
 
     }
 }
