@@ -1,80 +1,85 @@
 import java.util.*;
 
 public class Genetic {
-    //attributes
-    static int N = 3, numberOfGenerations, populationSize = 10;
-    static double crossOverRate=0.75, mutationRate;
 
-    static double selectionRate = 0.75;
+    private static int N;      //The dimension of puzzle (N*N)
+    private static int numberOfGenerations;        //Maximum number of generations that algorithm process
+    private static int populationSize;     //size of population in every generation
+    private static double crossOverRate;
+    private static double mutationRate;
+    private static String goalState;       //final pattern
+    private static final Random rand = new Random();      //obj for generating random numbers
+    private static int finalIndex;      //used for finding the proper chromosome in final generation
 
-    static Random rand = new Random();
+    public Genetic(int n, int numberOfGenerations, int populationSize, double crossOverRate, double mutationRate, String goalState) {
+        N = n;
+        Genetic.numberOfGenerations = numberOfGenerations;
+        Genetic.populationSize = populationSize;
+        Genetic.crossOverRate = crossOverRate;
+        Genetic.mutationRate = mutationRate;
+        Genetic.goalState = goalState;
+    }
 
-    static String goalState = "012345678";
-    static int generationCounter = 1;
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+    //Main function of algorithm
+    public void start(){
 
-    static int finalIndex;
-
-    //public Genetic(int n, int numberOfGenerations, int populationSize, double crossOverRate, double mutationRate) {
-    //    N = n;
-    //    this.numberOfGenerations = numberOfGenerations;
-    //    this.populationSize = populationSize;
-    //    this.crossOverRate = crossOverRate;
-    //    this.mutationRate = mutationRate;
-    //}
-
-    //this is the main function of algorithm
-    private void algorithm(){
-
-        //first of all, declaring what we need
-        ArrayList<String> initialPopulation = new ArrayList<>();
+        boolean finishToken = false;
 
         //let's create an initial population
-        initialPopulation = create_initial_population();
+        ArrayList<String> initialPopulation = create_initial_population();
         System.out.println("Initial population:");
         System.out.println(initialPopulation);
 
         if (termination_check(initialPopulation)){
             //that was easy! no need to create another generation
-            solved(initialPopulation);
+            solved(initialPopulation, 1);
         }
         else {
-            ArrayList<String> population = new ArrayList<>(initialPopulation);
-            //We assume that the algorithm goes up to 1000 generations at most
-            for (int i = 0; i < 1000; i++) {
-                generationCounter++;
+
+            for (int i = 0; i < numberOfGenerations; i++) {
+
                 //cross over
-                population = (ArrayList<String>) crossOver(population).clone();
-                if (termination_check(population)) break;
+                ArrayList<String> temp = crossOver(initialPopulation);
 
                 //mutation
                 double mRate = rand.nextDouble();
                 if (mRate < mutationRate){
-                    population = (ArrayList<String>) mutation(population).clone();
-                    if (termination_check(population)) break;
+                    Collections.copy(initialPopulation, mutation(temp));
+                }
+                else {
+                    Collections.copy(initialPopulation, temp);
                 }
 
-                //
+                if (termination_check(initialPopulation)){
+                    solved(initialPopulation, i + 2);
+                    finishToken = true;
+                    break;
+                }
+                System.out.println("Generation " + (i + 2) + ":  " + initialPopulation);
+
             }
+
+            if (!finishToken)
+                not_solved(initialPopulation, numberOfGenerations);
         }
-
-
     }
-
-    private void solved (ArrayList<String> population){
-        System.out.println("Problem solved in generation " + generationCounter + "!");
-        System.out.println("\nPopulation of this generation:");
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void solved (ArrayList<String> population, int generationNumber){
+        System.out.println("\n\nProblem solved in generation " + generationNumber + ".");
+        System.out.println("Population of this generation:");
         System.out.println(population);
-        System.out.println("\nFinal chromosome:");
+        System.out.println("Final chromosome:");
         System.out.println(population.get(finalIndex));
     }
-    private void not_solved (ArrayList<String> population){
-        System.out.println("Problem didn't solve after 1000 generation!");
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void not_solved (ArrayList<String> population, int generationNumber){
+        System.out.println("\n\nProblem didn't solve after "+generationNumber+" generation!");
         System.out.println("the nearest chromosome to goal state is " + population.get(finalIndex));
         System.out.println("with fitness of " + fitness(population.get(finalIndex)));
-        System.out.println("in generation " + generationCounter);
+        System.out.println("in generation " + generationNumber);
     }
-
-////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
     private static ArrayList<String> create_initial_population(){
 
         //in this array we save the chromosomes of first population
@@ -94,10 +99,10 @@ public class Genetic {
         }
         return initial_population;
     }
-//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
     private static Parent selection(ArrayList<String> population){
         while (true) {
-            int motherIndex = rand.nextInt(N * N);
+            int motherIndex = fitnessList(population).indexOf(Collections.min(fitnessList(population)));
             int fatherIndex;
             do {
                 fatherIndex = rand.nextInt(N * N);
@@ -106,23 +111,33 @@ public class Genetic {
 
             Parent parents = new Parent(population.get(motherIndex), population.get(fatherIndex), parentRate);
 
+            //Rates
+            double selectionRate = 0.75;
             if (parents.parentRate < selectionRate)
                 return parents;
         }
     }
-//////////////////////////////////////////////////////////////////////////////////////
 
+    private static ArrayList<Integer> fitnessList(ArrayList<String> population){
+        ArrayList<Integer> fitness = new ArrayList<>();
+        for (int i = 0; i < populationSize; i++)
+            fitness.add(fitness(population.get(i)));
+        return fitness;
+    }
+//////////////////////////////////////////////////////////////////////////////////////////////////////
     private static ArrayList<String> crossOver(ArrayList<String> population){
         ArrayList<String> newPopulation = new ArrayList<>();
         int boundary = (N*N)/2;
 
-        do {
+
+        while (true){
+            if (newPopulation.size() >= populationSize)
+                break;
 
             Parent parent = selection(population);
             double rate = rand.nextDouble();
             String motherPart = parent.mother.substring(0, boundary);
             String fatherPart = "";
-
 
             if (rate < crossOverRate) {
                 for (char i : parent.father.toCharArray()) {
@@ -130,20 +145,19 @@ public class Genetic {
                         fatherPart += i;
                 }
                 String child = motherPart + fatherPart;
-                if (!newPopulation.contains(child))
-                    newPopulation.add(child);
-            } else {
-                if (!newPopulation.contains(parent.father))
+                newPopulation.add(child);
+            }
+            else {
+                if (!newPopulation.contains(parent.father) && !(newPopulation.size() >= populationSize))
                     newPopulation.add(parent.father);
-                if (!newPopulation.contains(parent.mother))
+                if (!newPopulation.contains(parent.mother)&& !(newPopulation.size() >= populationSize))
                     newPopulation.add(parent.mother);
             }
 
-        } while (newPopulation.size() != populationSize);
-
+        }
         return newPopulation;
     }
-//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
     private static ArrayList<String> mutation(ArrayList<String> population){
         int randomIndex = rand.nextInt(populationSize);
         char[] chromosome = population.get(randomIndex).toCharArray();
@@ -156,8 +170,8 @@ public class Genetic {
         population.set(randomIndex, String.valueOf(chromosome));
         return population;
     }
-////////////////////////////////////////////////////////////////////////////////////////
-    private static int fitness(String string){
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+    public static int fitness(String string){
         char[] chromosome = string.toCharArray();
         char[] goal = goalState.toCharArray();
         int fitness = 0;
@@ -183,53 +197,22 @@ public class Genetic {
         }
         return fitness;
     }
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
     private static boolean termination_check(ArrayList<String> population){
+        int min = 100000;
+        int index = 0;
         for (int i = 0; i < populationSize; i++) {
             int fitness = fitness(population.get(i));
+            if (fitness < min){
+                min = fitness;
+                index = i;
+            }
             if (fitness == 0) {
                 finalIndex = i;
                 return true;
             }
         }
+        finalIndex = index;
         return false;
-    }
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    static ArrayList<String> ini;
-    static ArrayList<String> new_p;
-    public static void main(String[] args) {
-
-//        ini = create_initial_population();
-//        System.out.println(ini);
-//
-//        new_p = crossOver(ini);
-//        System.out.println(new_p);
-//
-//        mutation(new_p);
-//        System.out.println(new_p);
-//
-//        System.out.println(fitness("123456780"));
-
-        ArrayList<String> A = new ArrayList<>();
-        A.add("AAA");
-        A.add("AAA");
-        A.add("AAA");
-        A.add("AAA");
-        ArrayList<String> B = new ArrayList<>();
-        B.add("BBB");
-        B.add("BBB");
-        B.add("BBB");
-        B.add("BBB");
-        System.out.println(A);
-        System.out.println(B);
-
-        A = (ArrayList<String>) B.clone();
-        System.out.println(A);
-        System.out.println(B);
-        A.add("SSS");
-        B.add("GGG");
-
-        System.out.println(A);
-        System.out.println(B);
     }
 }
